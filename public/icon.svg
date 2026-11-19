@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="gtechGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#d946ef" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#020617" />
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="url(#gtechGrad)" stroke-width="10" opacity="0.35" />
+  <path
+    d="M322 146H252c-64 0-112 46-112 108s48 108 112 108c55 0 98-33 108-84h-104v-44h148v24c0 88-65 148-152 148-92 0-160-66-160-152s68-152 160-152h70v44z"
+    fill="url(#gtechGrad)"
+  />
+  <text
+    x="256"
+    y="444"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    font-size="62"
+    font-weight="800"
+    letter-spacing="14"
+    fill="#f8fafc"
+  >TECH</text>
+</svg>

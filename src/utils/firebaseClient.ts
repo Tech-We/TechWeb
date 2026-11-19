@@ -1,8 +1,8 @@
 import {getApp, getApps, initializeApp} from 'firebase/app';
 import {
-  browserLocalPersistence,
   getAuth,
   GoogleAuthProvider,
+  inMemoryPersistence,
   onAuthStateChanged,
   setPersistence,
   signInWithPopup,
@@ -37,7 +37,45 @@ export function getActiveDb(): Firestore {
   return db;
 }
 
-void setPersistence(auth, browserLocalPersistence).catch(() => undefined);
+void setPersistence(auth, inMemoryPersistence).catch(() => undefined);
+
+async function deleteIndexedDb(name: string): Promise<void> {
+  if (typeof indexedDB === 'undefined') return;
+  await new Promise<void>((resolve) => {
+    try {
+      const req = indexedDB.deleteDatabase(name);
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+      req.onblocked = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+async function clearAuthAndCacheIndexedDbs(): Promise<void> {
+  const knownNames = new Set<string>([
+    'firebaseLocalStorageDb',
+    'firebase-heartbeat-database',
+    'firebase-installations-database',
+  ]);
+  if (typeof indexedDB !== 'undefined' && typeof indexedDB.databases === 'function') {
+    try {
+      const dbs = await indexedDB.databases();
+      for (const info of dbs) {
+        if (
+          info.name &&
+          (info.name.includes('firebase') || info.name.includes('firestore'))
+        ) {
+          knownNames.add(info.name);
+        }
+      }
+    } catch {
+      // Ignore environments where indexedDB.databases() is unavailable
+    }
+  }
+  await Promise.all(Array.from(knownNames).map(deleteIndexedDb));
+}
 
 async function testConnection() {
   try {
@@ -55,10 +93,11 @@ export function initFirebaseAuth(callback: (user: User | null) => void): Unsubsc
   return onAuthStateChanged(auth, callback);
 }
 
-export async function googleSignIn(forceAccountSelect = false): Promise<User> {
+export async function googleSignIn(_forceAccountSelect = true): Promise<User> {
+  await setPersistence(auth, inMemoryPersistence).catch(() => undefined);
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({
-    prompt: forceAccountSelect ? 'select_account' : 'select_account',
+    prompt: 'select_account',
   });
   const credential = await signInWithPopup(auth, provider);
   return credential.user;
@@ -66,6 +105,7 @@ export async function googleSignIn(forceAccountSelect = false): Promise<User> {
 
 export async function logoutGoogle(): Promise<void> {
   await signOut(auth);
+  await clearAuthAndCacheIndexedDbs();
 }
 
 export async function resetFirestoreCache(): Promise<void> {
@@ -80,5 +120,6 @@ export async function resetFirestoreCache(): Promise<void> {
   } catch {
     // Ignore IndexedDB persistence clear errors
   }
+  await clearAuthAndCacheIndexedDbs();
   db = createFirestoreInstance();
 }

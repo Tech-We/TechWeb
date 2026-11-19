@@ -64,6 +64,7 @@ import {
   siguienteNroRecibo,
 } from './utils/salesAnalytics';
 import {ToastContainer, type ToastMessage} from './components/Toast';
+import {OfflineIndicator} from './components/PWAControls';
 
 const GUEST_STORAGE_KEY = 'tech_guest_state_v1';
 
@@ -122,7 +123,6 @@ export default function App() {
   // Auth & Database Mode (Cloud Firestore vs Guest Local)
   const [sessionMode, setSessionMode] = useState<SessionMode>('pending');
   const [googleUser, setGoogleUser] = useState<User | null>(null);
-  const [rememberedUser, setRememberedUser] = useState<User | null>(null);
   const [cloudUid, setCloudUid] = useState<string | null>(null);
   const [welcomeOpen, setWelcomeOpen] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
@@ -240,6 +240,16 @@ export default function App() {
   const loadGuestLocalState = useCallback(async () => {
     setSyncState('loading');
     setLoadError(null);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      if (sessionModeRef.current !== 'guest') return;
+      const fallback = readGuestLocalFallback();
+      revisionRef.current = fallback.revision;
+      setProductos(fallback.productos);
+      setReparaciones(fallback.reparaciones);
+      setHistorial(fallback.historial);
+      setSyncState('saved');
+      return;
+    }
     try {
       const res = await fetch('/api/state');
       const contentType = res.headers.get('content-type') || '';
@@ -274,7 +284,6 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = initFirebaseAuth((user) => {
-      setRememberedUser(user);
       setGoogleUser(user);
     });
     return unsubscribe;
@@ -390,18 +399,21 @@ export default function App() {
     [enqueueCloudTask, notify],
   );
 
-  const handleGoogleLogin = async (forceAccountSelect = false) => {
+  const handleGoogleLogin = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setAuthError(
+        'No tenés conexión a internet. Podés entrar como Invitado para seguir trabajando sin conexión.',
+      );
+      setWelcomeOpen(true);
+      return;
+    }
     setAuthError(null);
     setAuthLoading(true);
     setAuthStatus('Conectando con tu cuenta de Google...');
     try {
-      const user =
-        !forceAccountSelect && auth.currentUser
-          ? auth.currentUser
-          : await googleSignIn(forceAccountSelect);
+      const user = await googleSignIn(true);
 
       setGoogleUser(user);
-      setRememberedUser(user);
       setAuthStatus('Preparando tu base de datos personal en la nube...');
 
       await enqueueCloudTask(async () => {
@@ -413,15 +425,23 @@ export default function App() {
           cloudData.historial.length === 0;
 
         if (cloudEmpty) {
-          const initialData: CloudDataset = {
-            productos,
-            reparaciones,
-            historial,
-          };
+          const isFromGuest = sessionModeRef.current === 'guest';
+          const initialData: CloudDataset = isFromGuest
+            ? {
+                productos,
+                reparaciones,
+                historial,
+              }
+            : {
+                productos: [],
+                reparaciones: [],
+                historial: [],
+              };
           if (
-            initialData.productos.length > 0 ||
-            initialData.reparaciones.length > 0 ||
-            initialData.historial.length > 0
+            isFromGuest &&
+            (initialData.productos.length > 0 ||
+              initialData.reparaciones.length > 0 ||
+              initialData.historial.length > 0)
           ) {
             setAuthStatus('Inicializando datos en tu cuenta...');
             await syncCloudDatasetDiff(
@@ -433,6 +453,11 @@ export default function App() {
           lastCloudDatasetRef.current = initialData;
           cloudUidRef.current = user.uid;
           sessionModeRef.current = 'cloud';
+          if (!isFromGuest) {
+            setProductos([]);
+            setReparaciones([]);
+            setHistorial([]);
+          }
           setCloudUid(user.uid);
           setSessionMode('cloud');
           setSyncState('saved');
@@ -494,7 +519,7 @@ export default function App() {
 
   const handleSaveToCloudNow = async () => {
     if (sessionModeRef.current !== 'cloud' || !cloudUidRef.current || !auth.currentUser) {
-      await handleGoogleLogin(false);
+      await handleGoogleLogin();
       return;
     }
     const uid = cloudUidRef.current;
@@ -531,7 +556,7 @@ export default function App() {
 
   const handleRestoreFromCloud = async () => {
     if (sessionModeRef.current !== 'cloud' || !cloudUidRef.current || !auth.currentUser) {
-      await handleGoogleLogin(false);
+      await handleGoogleLogin();
       return;
     }
     const uid = cloudUidRef.current;
@@ -627,7 +652,6 @@ export default function App() {
     await resetFirestoreCache();
 
     setGoogleUser(null);
-    setRememberedUser(null);
     setProductos([]);
     setReparaciones([]);
     setHistorial([]);
@@ -1462,7 +1486,6 @@ export default function App() {
       <WelcomeAuthModal
         open={welcomeOpen}
         canDismiss={sessionMode !== 'pending'}
-        rememberedUser={rememberedUser}
         loading={authLoading}
         statusMessage={authStatus}
         errorMessage={authError}
@@ -1492,6 +1515,7 @@ export default function App() {
         }}
       />
 
+      <OfflineIndicator />
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );

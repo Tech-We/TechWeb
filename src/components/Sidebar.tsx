@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type {SectionId} from '../types';
 import {OFFICIAL_LOGO_PATH} from '../utils/thermalPrint';
+import {PWAInstallButton} from './PWAControls';
 
 export const TECH_LOGO_PATH = OFFICIAL_LOGO_PATH;
 
@@ -145,6 +146,10 @@ export function Sidebar({
               );
             })}
           </nav>
+        </div>
+
+        <div className="p-2.5 border-t border-slate-800 shrink-0">
+          <PWAInstallButton variant="sidebar" collapsed={collapsed} />
         </div>
       </aside>
     </>

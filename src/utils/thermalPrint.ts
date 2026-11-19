@@ -2,6 +2,8 @@ import type {RepairOrder, SaleItem} from '../types';
 import {formatARS} from './format';
 
 export const OFFICIAL_LOGO_PATH = '/assets/aistudio/logo_1a55bcb5_1a55bcb5.png';
+export const STORE_ADDRESS = 'YAMANDU RODRÍGUEZ 816';
+export const STORE_CONTACT = '3814564813';
 
 export type PaperWidth = '80' | '58' | 'A4';
 
@@ -59,6 +61,14 @@ export const TICKET_CSS = `
   .tech-ticket-sub {
     font-size: 10px;
     color: #475569;
+  }
+  .tech-ticket-contact {
+    font-size: 9.5px;
+    color: #334155;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed #cbd5e1;
+    line-height: 1.4;
   }
   .tech-ticket-title {
     text-align: center;
@@ -336,6 +346,10 @@ export function buildSaleTicketHTML(params: {
       <div class="tech-ticket-footer">
         <div>¡Gracias por su compra!</div>
         <div>Conserve este comprobante.</div>
+        <div class="tech-ticket-contact">
+          <div><strong>DIRECCIÓN:</strong> ${escapeHtml(STORE_ADDRESS)}</div>
+          <div><strong>CONTACTO:</strong> ${escapeHtml(STORE_CONTACT)}</div>
+        </div>
       </div>
     </div>
   `;
@@ -383,6 +397,10 @@ export function buildRepairTicketHTML(orden: RepairOrder, logoUrl: string): stri
       <div class="tech-ticket-footer">
         <div>Presentar este comprobante para retirar el equipo.</div>
         <div>Garantía sujeta a revisión de taller.</div>
+        <div class="tech-ticket-contact">
+          <div><strong>DIRECCIÓN:</strong> ${escapeHtml(STORE_ADDRESS)}</div>
+          <div><strong>CONTACTO:</strong> ${escapeHtml(STORE_CONTACT)}</div>
+        </div>
       </div>
     </div>
   `;

@@ -1,16 +1,16 @@
-import type {User} from 'firebase/auth';
-import {HardDrive, Loader2, UserRound, X} from 'lucide-react';
+import {HardDrive, Loader2, UserRound, WifiOff, X} from 'lucide-react';
+import {useOnlineStatus} from '../hooks/useOnlineStatus';
 import {OFFICIAL_LOGO_PATH} from '../utils/thermalPrint';
 import type {LegalDocType} from './LegalPage';
+import {PWAInstallButton} from './PWAControls';
 
 interface WelcomeAuthModalProps {
   open: boolean;
   canDismiss: boolean;
-  rememberedUser: User | null;
   loading: boolean;
   statusMessage: string | null;
   errorMessage: string | null;
-  onGoogleLogin: (forceAccountSelect?: boolean) => void;
+  onGoogleLogin: () => void;
   onContinueAsGuest: () => void;
   onClose: () => void;
   onNavigateLegal: (doc: LegalDocType) => void;
@@ -49,7 +49,6 @@ function GoogleLogoSvg() {
 export function WelcomeAuthModal({
   open,
   canDismiss,
-  rememberedUser,
   loading,
   statusMessage,
   errorMessage,
@@ -58,6 +57,8 @@ export function WelcomeAuthModal({
   onClose,
   onNavigateLegal,
 }: WelcomeAuthModalProps) {
+  const isOnline = useOnlineStatus();
+
   if (!open) return null;
 
   return (
@@ -95,6 +96,16 @@ export function WelcomeAuthModal({
           </div>
 
           {/* Alerts / Progress */}
+          {!isOnline && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-800 font-medium flex items-start gap-2">
+              <WifiOff className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+              <span>
+                Sin conexión a internet. Podés entrar como{' '}
+                <strong>Invitado</strong> y seguir trabajando offline en este equipo.
+              </span>
+            </div>
+          )}
+
           {errorMessage && (
             <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs text-red-700 font-medium">
               {errorMessage}
@@ -110,40 +121,15 @@ export function WelcomeAuthModal({
 
           {/* Google Sign-In */}
           <div className="space-y-2">
-            {rememberedUser && (
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => onGoogleLogin(false)}
-                className="gsi-material-button w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-[#747775]/40 text-[#1f1f1f] text-sm font-semibold shadow-sm transition-all disabled:opacity-60 cursor-pointer"
-              >
-                {rememberedUser.photoURL ? (
-                  <img
-                    src={rememberedUser.photoURL}
-                    alt={rememberedUser.displayName || 'Google'}
-                    referrerPolicy="no-referrer"
-                    className="w-5 h-5 rounded-full object-cover shrink-0"
-                  />
-                ) : (
-                  <GoogleLogoSvg />
-                )}
-                <span className="truncate">
-                  Continuar como {rememberedUser.email || rememberedUser.displayName}
-                </span>
-              </button>
-            )}
-
             <button
               type="button"
-              disabled={loading}
-              onClick={() => onGoogleLogin(Boolean(rememberedUser))}
-              className="gsi-material-button w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-[#747775]/40 text-[#1f1f1f] text-sm font-semibold shadow-sm transition-all disabled:opacity-60 cursor-pointer"
+              disabled={loading || !isOnline}
+              onClick={() => onGoogleLogin()}
+              className="gsi-material-button w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 active:bg-slate-100 border border-[#747775]/40 text-[#1f1f1f] text-sm font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <GoogleLogoSvg />
               <span className="gsi-material-button-contents">
-                {rememberedUser
-                  ? 'Usar otra cuenta de Google'
-                  : 'Iniciar sesión con Google'}
+                Iniciar sesión con Google
               </span>
             </button>
           </div>
@@ -173,6 +159,8 @@ export function WelcomeAuthModal({
               <span>En modo invitado los datos se guardan localmente en este equipo.</span>
             </p>
           </div>
+
+          <PWAInstallButton variant="modal" />
 
           {/* Public Legal Links Footer (Google Auth Platform Verification Ready) */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-4 text-[11px] text-slate-500">
