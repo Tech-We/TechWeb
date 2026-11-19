@@ -14,7 +14,7 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import type {Product, RepairOrder, RepairStatus, SaleItem, SaleRecord} from '../types';
-import {db} from './firebaseClient';
+import {getActiveDb} from './firebaseClient';
 import {handleFirestoreError, OperationType} from './firestoreErrors';
 
 export interface CloudDataset {
@@ -162,7 +162,8 @@ function buildSalePayload(uid: string, s: SaleRecord, includeCreateFields: boole
 }
 
 export async function ensureUserProfile(user: User): Promise<void> {
-  const userRef = doc(db, 'users', user.uid);
+  const firestore = getActiveDb();
+  const userRef = doc(firestore, 'users', user.uid);
   const path = `users/${user.uid}`;
   try {
     const snap = await getDoc(userRef);
@@ -239,16 +240,17 @@ function mapDocToSale(data: Record<string, unknown>): SaleRecord {
 
 export async function fetchUserCloudData(uid: string): Promise<CloudDataset> {
   try {
+    const firestore = getActiveDb();
     const prodQ = query(
-      collection(db, 'users', uid, 'productos'),
+      collection(firestore, 'users', uid, 'productos'),
       where('ownerUid', '==', uid),
     );
     const repQ = query(
-      collection(db, 'users', uid, 'reparaciones'),
+      collection(firestore, 'users', uid, 'reparaciones'),
       where('ownerUid', '==', uid),
     );
     const histQ = query(
-      collection(db, 'users', uid, 'historial'),
+      collection(firestore, 'users', uid, 'historial'),
       where('ownerUid', '==', uid),
     );
 
@@ -285,16 +287,17 @@ export function subscribeUserCloudData(
     onError: (err: Error) => void;
   },
 ): Unsubscribe {
+  const firestore = getActiveDb();
   const prodQ = query(
-    collection(db, 'users', uid, 'productos'),
+    collection(firestore, 'users', uid, 'productos'),
     where('ownerUid', '==', uid),
   );
   const repQ = query(
-    collection(db, 'users', uid, 'reparaciones'),
+    collection(firestore, 'users', uid, 'reparaciones'),
     where('ownerUid', '==', uid),
   );
   const histQ = query(
-    collection(db, 'users', uid, 'historial'),
+    collection(firestore, 'users', uid, 'historial'),
     where('ownerUid', '==', uid),
   );
 
@@ -374,6 +377,8 @@ export async function syncCloudDatasetDiff(
 
   const ops: Op[] = [];
 
+  const firestore = getActiveDb();
+
   // 1. Productos diff
   const prevProdMap = new Map(prev.productos.map((p) => [p.codigo, p]));
   const nextProdMap = new Map(next.productos.map((p) => [p.codigo, p]));
@@ -382,14 +387,14 @@ export async function syncCloudDatasetDiff(
     if (!nextProdMap.has(codigo)) {
       ops.push({
         kind: 'delete',
-        ref: doc(db, 'users', uid, 'productos', productDocId(codigo)),
+        ref: doc(firestore, 'users', uid, 'productos', productDocId(codigo)),
       });
     }
   });
 
   nextProdMap.forEach((prod, codigo) => {
     const oldProd = prevProdMap.get(codigo);
-    const ref = doc(db, 'users', uid, 'productos', productDocId(codigo));
+    const ref = doc(firestore, 'users', uid, 'productos', productDocId(codigo));
     if (!oldProd) {
       ops.push({
         kind: 'set',
@@ -413,14 +418,14 @@ export async function syncCloudDatasetDiff(
     if (!nextRepMap.has(id)) {
       ops.push({
         kind: 'delete',
-        ref: doc(db, 'users', uid, 'reparaciones', repairDocId(oldRep)),
+        ref: doc(firestore, 'users', uid, 'reparaciones', repairDocId(oldRep)),
       });
     }
   });
 
   nextRepMap.forEach((rep, id) => {
     const oldRep = prevRepMap.get(id);
-    const ref = doc(db, 'users', uid, 'reparaciones', repairDocId(rep));
+    const ref = doc(firestore, 'users', uid, 'reparaciones', repairDocId(rep));
     if (!oldRep) {
       ops.push({
         kind: 'set',
@@ -444,14 +449,14 @@ export async function syncCloudDatasetDiff(
     if (!nextHistMap.has(nRecibo)) {
       ops.push({
         kind: 'delete',
-        ref: doc(db, 'users', uid, 'historial', saleDocId(nRecibo)),
+        ref: doc(firestore, 'users', uid, 'historial', saleDocId(nRecibo)),
       });
     }
   });
 
   nextHistMap.forEach((sale, nRecibo) => {
     const oldSale = prevHistMap.get(nRecibo);
-    const ref = doc(db, 'users', uid, 'historial', saleDocId(nRecibo));
+    const ref = doc(firestore, 'users', uid, 'historial', saleDocId(nRecibo));
     if (!oldSale) {
       ops.push({
         kind: 'set',
@@ -474,7 +479,7 @@ export async function syncCloudDatasetDiff(
   try {
     for (let i = 0; i < ops.length; i += CHUNK_SIZE) {
       const slice = ops.slice(i, i + CHUNK_SIZE);
-      const batch = writeBatch(db);
+      const batch = writeBatch(firestore);
       for (const op of slice) {
         if (op.kind === 'set') {
           batch.set(op.ref, op.data);

@@ -297,6 +297,7 @@ export default function App() {
         setHistorial(items);
       },
       onError: (err) => {
+        if (sessionModeRef.current !== 'cloud') return;
         setSyncState('error');
         notify('error', `Error de sincronización en la nube: ${err.message}`);
       },
@@ -585,6 +586,17 @@ export default function App() {
     setAccountOpen(false);
     setMobileMenuOpen(false);
 
+    // Clear session refs/state first so active onSnapshot listeners unmount cleanly before terminate()
+    cloudUidRef.current = null;
+    sessionModeRef.current = 'pending';
+    revisionRef.current = 0;
+    pendingSavesRef.current = 0;
+    saveQueueRef.current = Promise.resolve();
+    lastCloudDatasetRef.current = {productos: [], reparaciones: [], historial: []};
+
+    setCloudUid(null);
+    setSessionMode('pending');
+
     try {
       await logoutGoogle();
     } catch {
@@ -611,18 +623,9 @@ export default function App() {
       }
     }
 
-    // Terminate & clear Firestore IndexedDB persistence
+    // Terminate, clear IndexedDB persistence, and immediately recreate active Firestore instance
     await resetFirestoreCache();
 
-    // Wipe all in-memory refs and state so the screen is completely blank
-    cloudUidRef.current = null;
-    sessionModeRef.current = 'pending';
-    revisionRef.current = 0;
-    pendingSavesRef.current = 0;
-    saveQueueRef.current = Promise.resolve();
-    lastCloudDatasetRef.current = {productos: [], reparaciones: [], historial: []};
-
-    setCloudUid(null);
     setGoogleUser(null);
     setRememberedUser(null);
     setProductos([]);
