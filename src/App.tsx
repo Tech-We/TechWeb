@@ -471,6 +471,12 @@ export default function App() {
         setAuthError(
           'El navegador bloqueó la ventana de Google. Permití las ventanas emergentes e intentá de nuevo.',
         );
+      } else if (code === 'auth/unauthorized-domain') {
+        const host =
+          typeof window !== 'undefined' ? window.location.hostname : 'este dominio';
+        setAuthError(
+          `El dominio "${host}" no está autorizado en Firebase Auth (proyecto tech-w). Agregalo en Firebase Console → Authentication → Settings → Authorized domains.`,
+        );
       } else {
         setAuthError(
           err instanceof Error
