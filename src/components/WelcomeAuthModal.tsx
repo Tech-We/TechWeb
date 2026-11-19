@@ -2,7 +2,6 @@ import {HardDrive, Loader2, UserRound, WifiOff, X} from 'lucide-react';
 import {useOnlineStatus} from '../hooks/useOnlineStatus';
 import {OFFICIAL_LOGO_PATH} from '../utils/thermalPrint';
 import type {LegalDocType} from './LegalPage';
-import {PWAInstallButton} from './PWAControls';
 
 interface WelcomeAuthModalProps {
   open: boolean;
@@ -159,8 +158,6 @@ export function WelcomeAuthModal({
               <span>En modo invitado los datos se guardan localmente en este equipo.</span>
             </p>
           </div>
-
-          <PWAInstallButton variant="modal" />
 
           {/* Public Legal Links Footer (Google Auth Platform Verification Ready) */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-4 text-[11px] text-slate-500">
