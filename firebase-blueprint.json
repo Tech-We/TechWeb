@@ -1,0 +1,310 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile tied to a Google account.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the account owner.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name from Google account.",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address from Google account.",
+          "maxLength": 160
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile avatar URL.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": ["ownerUid", "email", "createdAt", "updatedAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Inventory part or accessory owned by a user.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "codigo": {
+          "type": "string",
+          "description": "Barcode or SKU string.",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "nombre": {
+          "type": "string",
+          "description": "Product name.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "categoria": {
+          "type": "string",
+          "description": "Product category.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "costo": {
+          "type": "number",
+          "description": "Unit cost in ARS."
+        },
+        "precio": {
+          "type": "number",
+          "description": "Unit sale price in ARS."
+        },
+        "stock": {
+          "type": "number",
+          "description": "Available units in stock."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "ownerUid",
+        "codigo",
+        "nombre",
+        "categoria",
+        "costo",
+        "precio",
+        "stock",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RepairOrder": {
+      "title": "RepairOrder",
+      "description": "Technical service repair order owned by a user.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "id": {
+          "type": "number",
+          "description": "Numeric order identifier."
+        },
+        "n_orden": {
+          "type": "string",
+          "description": "Formatted order code (e.g. TFX-1001).",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "cliente": {
+          "type": "string",
+          "description": "Customer full name.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "telefono": {
+          "type": "string",
+          "description": "Customer phone number.",
+          "maxLength": 40
+        },
+        "equipo": {
+          "type": "string",
+          "description": "Device model.",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "falla": {
+          "type": "string",
+          "description": "Declared fault or work notes.",
+          "maxLength": 500
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["En Reparación", "Listo para Entregar", "Retirado"],
+          "description": "Current repair workflow status."
+        },
+        "presupuesto": {
+          "type": "number",
+          "description": "Quoted repair price."
+        },
+        "senia": {
+          "type": "number",
+          "description": "Deposit paid."
+        },
+        "costo_repuesto": {
+          "type": "number",
+          "description": "Internal replacement part cost."
+        },
+        "fecha": {
+          "type": "string",
+          "description": "Order intake date string.",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "ownerUid",
+        "id",
+        "n_orden",
+        "cliente",
+        "telefono",
+        "equipo",
+        "falla",
+        "estado",
+        "presupuesto",
+        "senia",
+        "costo_repuesto",
+        "fecha",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SaleRecord": {
+      "title": "SaleRecord",
+      "description": "Completed POS or scanner sale receipt record.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "n_recibo": {
+          "type": "string",
+          "description": "Receipt code (e.g. TFX-REC-1001).",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "fecha": {
+          "type": "string",
+          "description": "Sale date and time string.",
+          "maxLength": 32
+        },
+        "detalle": {
+          "type": "string",
+          "description": "Line item summary text.",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "metodo_pago": {
+          "type": "string",
+          "description": "Payment method.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "total": {
+          "type": "number",
+          "description": "Total amount charged."
+        },
+        "descuento": {
+          "type": "number",
+          "description": "Discount applied."
+        },
+        "paga_con": {
+          "type": "number",
+          "description": "Amount tendered."
+        },
+        "vuelto": {
+          "type": "number",
+          "description": "Change given."
+        },
+        "editado": {
+          "type": "string",
+          "description": "ISO timestamp when edited.",
+          "maxLength": 40
+        },
+        "items": {
+          "type": "array",
+          "description": "Bounded line item details (max 100 items)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "ownerUid",
+        "n_recibo",
+        "fecha",
+        "detalle",
+        "metodo_pago",
+        "total",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Private Google-authenticated user workspace profile."
+    },
+    "/users/{userId}/productos/{productId}": {
+      "schema": {
+        "$ref": "#/entities/Product"
+      },
+      "description": "User inventory products and pricing."
+    },
+    "/users/{userId}/reparaciones/{repairId}": {
+      "schema": {
+        "$ref": "#/entities/RepairOrder"
+      },
+      "description": "User workshop repair orders."
+    },
+    "/users/{userId}/historial/{saleId}": {
+      "schema": {
+        "$ref": "#/entities/SaleRecord"
+      },
+      "description": "User sales and receipt history."
+    }
+  }
+}

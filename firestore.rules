@@ -1,0 +1,290 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn()
+        && (
+          request.auth.token.email_verified == true
+          || request.auth.token.firebase.sign_in_provider == 'google.com'
+        );
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function hasValidUserParent(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId))
+        && get(/databases/$(database)/documents/users/$(userId)).data.ownerUid == request.auth.uid;
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['ownerUid', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerUid', 'displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
+        && data.ownerUid is string
+        && data.ownerUid == request.auth.uid
+        && data.ownerUid == userId
+        && data.email is string
+        && data.email.size() >= 3
+        && data.email.size() <= 160
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 120))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['ownerUid', 'codigo', 'nombre', 'categoria', 'costo', 'precio', 'stock', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerUid', 'codigo', 'nombre', 'categoria', 'costo', 'precio', 'stock', 'createdAt', 'updatedAt'])
+        && data.ownerUid is string
+        && data.ownerUid == request.auth.uid
+        && data.codigo is string
+        && data.codigo.size() >= 1
+        && data.codigo.size() <= 64
+        && data.nombre is string
+        && data.nombre.size() >= 1
+        && data.nombre.size() <= 160
+        && data.categoria is string
+        && data.categoria.size() >= 1
+        && data.categoria.size() <= 80
+        && data.costo is number
+        && data.costo >= 0
+        && data.precio is number
+        && data.precio >= 0
+        && data.stock is number
+        && data.stock >= 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRepairOrder(data) {
+      return data.keys().hasAll([
+          'ownerUid', 'id', 'n_orden', 'cliente', 'telefono', 'equipo',
+          'falla', 'estado', 'presupuesto', 'senia', 'costo_repuesto',
+          'fecha', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'n_orden', 'cliente', 'telefono', 'equipo',
+          'falla', 'estado', 'presupuesto', 'senia', 'costo_repuesto',
+          'fecha', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid is string
+        && data.ownerUid == request.auth.uid
+        && data.id is number
+        && data.id >= 0
+        && data.n_orden is string
+        && data.n_orden.size() >= 1
+        && data.n_orden.size() <= 32
+        && data.n_orden.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.cliente is string
+        && data.cliente.size() >= 1
+        && data.cliente.size() <= 120
+        && data.telefono is string
+        && data.telefono.size() <= 40
+        && data.equipo is string
+        && data.equipo.size() >= 1
+        && data.equipo.size() <= 160
+        && data.falla is string
+        && data.falla.size() <= 500
+        && data.estado in ['En Reparación', 'Listo para Entregar', 'Retirado']
+        && data.presupuesto is number
+        && data.presupuesto >= 0
+        && data.senia is number
+        && data.senia >= 0
+        && data.costo_repuesto is number
+        && data.costo_repuesto >= 0
+        && data.fecha is string
+        && data.fecha.size() >= 1
+        && data.fecha.size() <= 32
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSaleRecord(data) {
+      return data.keys().hasAll([
+          'ownerUid', 'n_recibo', 'fecha', 'detalle', 'metodo_pago', 'total',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'n_recibo', 'fecha', 'detalle', 'metodo_pago', 'total',
+          'descuento', 'paga_con', 'vuelto', 'editado', 'items',
+          'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid is string
+        && data.ownerUid == request.auth.uid
+        && data.n_recibo is string
+        && data.n_recibo.size() >= 1
+        && data.n_recibo.size() <= 40
+        && data.n_recibo.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.fecha is string
+        && data.fecha.size() >= 1
+        && data.fecha.size() <= 32
+        && data.detalle is string
+        && data.detalle.size() >= 1
+        && data.detalle.size() <= 600
+        && data.metodo_pago is string
+        && data.metodo_pago.size() >= 1
+        && data.metodo_pago.size() <= 40
+        && data.total is number
+        && data.total >= 0
+        && (!('descuento' in data) || (data.descuento is number && data.descuento >= 0))
+        && (!('paga_con' in data) || (data.paga_con is number && data.paga_con >= 0))
+        && (!('vuelto' in data) || (data.vuelto is number && data.vuelto >= 0))
+        && (!('editado' in data) || (data.editado is string && data.editado.size() <= 40))
+        && (!('items' in data) || (
+          data.items is list
+          && data.items.size() <= 100
+          && (data.items.size() == 0 || data.items[0] is map)
+        ))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Rules
+    match /users/{userId} {
+      allow get: if isValidId(userId)
+        && isVerifiedOwner(userId)
+        && (resource == null || existing().ownerUid == request.auth.uid);
+      allow list: if false;
+      allow create: if isValidId(userId)
+        && isVerifiedOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'photoURL', 'updatedAt']);
+      allow delete: if false;
+
+      match /productos/{productId} {
+        allow get: if isValidId(userId)
+          && isValidId(productId)
+          && isVerifiedOwner(userId)
+          && hasValidUserParent(userId)
+          && (resource == null || existing().ownerUid == request.auth.uid);
+        allow list: if isVerifiedOwner(userId)
+          && existing().ownerUid == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(productId)
+          && isVerifiedOwner(userId)
+          && isValidProduct(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && hasValidUserParent(userId);
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(productId)
+          && isValidProduct(incoming())
+          && hasValidUserParent(userId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['stock', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly(['nombre', 'categoria', 'costo', 'precio', 'stock', 'updatedAt'])
+          );
+        allow delete: if isValidId(userId)
+          && isValidId(productId)
+          && isVerifiedOwner(userId)
+          && hasValidUserParent(userId);
+      }
+
+      match /reparaciones/{repairId} {
+        allow get: if isValidId(userId)
+          && isValidId(repairId)
+          && isVerifiedOwner(userId)
+          && hasValidUserParent(userId)
+          && (resource == null || existing().ownerUid == request.auth.uid);
+        allow list: if isVerifiedOwner(userId)
+          && existing().ownerUid == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(repairId)
+          && isVerifiedOwner(userId)
+          && isValidRepairOrder(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && hasValidUserParent(userId);
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(repairId)
+          && isValidRepairOrder(incoming())
+          && hasValidUserParent(userId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['estado', 'senia', 'updatedAt'])
+            || incoming().diff(existing()).affectedKeys().hasOnly([
+              'cliente', 'telefono', 'equipo', 'falla', 'estado',
+              'presupuesto', 'senia', 'costo_repuesto', 'fecha', 'updatedAt'
+            ])
+          );
+        allow delete: if isValidId(userId)
+          && isValidId(repairId)
+          && isVerifiedOwner(userId)
+          && hasValidUserParent(userId);
+      }
+
+      match /historial/{saleId} {
+        allow get: if isValidId(userId)
+          && isValidId(saleId)
+          && isVerifiedOwner(userId)
+          && hasValidUserParent(userId)
+          && (resource == null || existing().ownerUid == request.auth.uid);
+        allow list: if isVerifiedOwner(userId)
+          && existing().ownerUid == request.auth.uid;
+        allow create: if isValidId(userId)
+          && isValidId(saleId)
+          && isVerifiedOwner(userId)
+          && isValidSaleRecord(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && hasValidUserParent(userId);
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(userId)
+          && isValidId(saleId)
+          && isValidSaleRecord(incoming())
+          && hasValidUserParent(userId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'fecha', 'detalle', 'metodo_pago', 'total',
+            'descuento', 'paga_con', 'vuelto', 'editado', 'items', 'updatedAt'
+          ]);
+        allow delete: if isValidId(userId)
+          && isValidId(saleId)
+          && isVerifiedOwner(userId)
+          && hasValidUserParent(userId);
+      }
+    }
+  }
+}

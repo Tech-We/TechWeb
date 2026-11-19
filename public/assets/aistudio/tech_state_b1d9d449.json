@@ -1,0 +1,101 @@
+{
+  "revision": 1,
+  "productos": [
+    {
+      "codigo": "2001",
+      "nombre": "Módulo Display Samsung A12",
+      "categoria": "Repuestos",
+      "costo": 12500,
+      "precio": 28000,
+      "stock": 4
+    },
+    {
+      "codigo": "2002",
+      "nombre": "Pin de Carga Tipo C Universal",
+      "categoria": "Repuestos",
+      "costo": 800,
+      "precio": 3500,
+      "stock": 15
+    },
+    {
+      "codigo": "2003",
+      "nombre": "Batería iPhone 11 Original",
+      "categoria": "Baterías",
+      "costo": 9500,
+      "precio": 22000,
+      "stock": 3
+    },
+    {
+      "codigo": "2004",
+      "nombre": "Vidrio Templado 9D Motorola G54",
+      "categoria": "Accesorios",
+      "costo": 650,
+      "precio": 2800,
+      "stock": 2
+    },
+    {
+      "codigo": "2005",
+      "nombre": "Flex Encendido Xiaomi Redmi Note 11",
+      "categoria": "Repuestos",
+      "costo": 2100,
+      "precio": 6500,
+      "stock": 1
+    }
+  ],
+  "reparaciones": [
+    {
+      "id": 1731700001001,
+      "n_orden": "TFX-1001",
+      "cliente": "Martín González",
+      "telefono": "381 5124890",
+      "equipo": "Samsung Galaxy A12",
+      "falla": "Pantalla astillada sin imagen, cambio de módulo completo",
+      "estado": "En Reparación",
+      "presupuesto": 38000,
+      "senia": 15000,
+      "costo_repuesto": 12500,
+      "fecha": "2026-11-16"
+    },
+    {
+      "id": 1731700001002,
+      "n_orden": "TFX-1002",
+      "cliente": "Lucía Fernández",
+      "telefono": "381 6449012",
+      "equipo": "iPhone 11 128GB",
+      "falla": "Cambio de batería (salud al 68%) y limpieza de pin de carga",
+      "estado": "Listo para Entregar",
+      "presupuesto": 34000,
+      "senia": 10000,
+      "costo_repuesto": 9500,
+      "fecha": "2026-11-16"
+    }
+  ],
+  "historial": [
+    {
+      "n_recibo": "TFX-REC-1001",
+      "fecha": "2026-11-16 22:21:44",
+      "detalle": "1x Pin de Carga Tipo C Universal, 1x Vidrio Templado 9D Motorola G54",
+      "metodo_pago": "Efectivo",
+      "total": 6300,
+      "descuento": 0,
+      "paga_con": 10000,
+      "vuelto": 3700,
+      "items": [
+        {
+          "nombre": "Pin de Carga Tipo C Universal",
+          "cantidad": 1,
+          "precio": 3500,
+          "codigo": "2002",
+          "es_reparacion": false
+        },
+        {
+          "nombre": "Vidrio Templado 9D Motorola G54",
+          "cantidad": 1,
+          "precio": 2800,
+          "codigo": "2004",
+          "es_reparacion": false
+        }
+      ]
+    }
+  ]
+}

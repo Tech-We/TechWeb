@@ -1,0 +1,6 @@
+{
+  "name": "TECH — Servicio Técnico & Punto de Venta",
+  "description": "Sistema integral para gestión de servicio técnico especializado, inventario con escáner de códigos de barras, punto de venta, comprobantes y balance de ganancias.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
