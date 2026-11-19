@@ -65,9 +65,7 @@ export const TICKET_CSS = `
   .tech-ticket-contact {
     font-size: 9.5px;
     color: #334155;
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px dashed #cbd5e1;
+    margin-top: 4px;
     line-height: 1.4;
   }
   .tech-ticket-title {
@@ -344,8 +342,8 @@ export function buildSaleTicketHTML(params: {
       }
 
       <div class="tech-ticket-footer">
-        <div>¡Gracias por su compra!</div>
         <div>Conserve este comprobante.</div>
+        <div>¡Gracias por su compra!</div>
         <div class="tech-ticket-contact">
           <div><strong>DIRECCIÓN:</strong> ${escapeHtml(STORE_ADDRESS)}</div>
           <div><strong>CONTACTO:</strong> ${escapeHtml(STORE_CONTACT)}</div>
@@ -397,6 +395,7 @@ export function buildRepairTicketHTML(orden: RepairOrder, logoUrl: string): stri
       <div class="tech-ticket-footer">
         <div>Presentar este comprobante para retirar el equipo.</div>
         <div>Garantía sujeta a revisión de taller.</div>
+        <div style="margin-top:4px;">¡Gracias por su preferencia!</div>
         <div class="tech-ticket-contact">
           <div><strong>DIRECCIÓN:</strong> ${escapeHtml(STORE_ADDRESS)}</div>
           <div><strong>CONTACTO:</strong> ${escapeHtml(STORE_CONTACT)}</div>
