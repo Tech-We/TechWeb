@@ -7,7 +7,6 @@ import {
   CameraOff,
   Check,
   ZoomIn,
-  RefreshCw,
   Trash2,
   Receipt,
 } from 'lucide-react';
@@ -15,12 +14,9 @@ import type {Html5Qrcode} from 'html5-qrcode';
 import type {Product} from '../types';
 import {formatARS} from '../utils/format';
 import {
-  CLAVE_CAMARA,
   CLAVE_ZOOM,
   crearLectorCamara,
-  iniciarLectorConOpciones,
-  obtenerCamarasTraseras,
-  type CameraDevice,
+  iniciarMejorCamara,
   type ZoomCapabilities,
 } from '../utils/camera';
 import type {ScannerCartLine} from './Modals';
@@ -55,8 +51,6 @@ export function ScannerSection({
   const [barcodeInput, setBarcodeInput] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [camaras, setCamaras] = useState<CameraDevice[]>([]);
-  const [camIdx, setCamIdx] = useState(0);
   const [zoomCap, setZoomCap] = useState<ZoomCapabilities | null>(null);
   const [zoomVal, setZoomVal] = useState(1);
 
@@ -148,21 +142,6 @@ export function ScannerSection({
     };
   }, []);
 
-  const startWithCameraIndex = async (
-    lector: Html5Qrcode,
-    lista: CameraDevice[],
-    index: number,
-  ) => {
-    const deviceId = lista.length ? lista[index].id : null;
-    const zoom = await iniciarLectorConOpciones(lector, deviceId, (decodedText) => {
-      setBarcodeInput(decodedText);
-      stopCamera();
-      handleBarcodeLookup(decodedText);
-    });
-    setZoomCap(zoom);
-    if (zoom) setZoomVal(zoom.valor);
-  };
-
   const toggleCamera = async () => {
     if (cameraActive) {
       await stopCamera();
@@ -173,36 +152,21 @@ export function ScannerSection({
     setCameraActive(true);
 
     try {
-      const lista = await obtenerCamarasTraseras().catch(() => []);
-      setCamaras(lista);
-      let idx = lista.findIndex((c) => c.id === localStorage.getItem(CLAVE_CAMARA));
-      if (idx < 0) idx = 0;
-      setCamIdx(idx);
-
       const qr = await crearLectorCamara('qr-reader-container');
       scannerInstanceRef.current = qr;
-      await startWithCameraIndex(qr, lista, idx);
+      const zoom = await iniciarMejorCamara(qr, (decodedText) => {
+        setBarcodeInput(decodedText);
+        stopCamera();
+        handleBarcodeLookup(decodedText);
+      });
+      setZoomCap(zoom);
+      if (zoom) setZoomVal(zoom.valor);
     } catch {
       await stopCamera();
       setCameraError(
         'No se pudo acceder a la cámara. Verificá los permisos del navegador o usá pistola USB / ingreso manual.',
       );
       onNotify('error', 'No se pudo iniciar la cámara para escanear.');
-    }
-  };
-
-  const handleSwitchCamera = async () => {
-    if (!scannerInstanceRef.current || camaras.length <= 1) return;
-    const nextIdx = (camIdx + 1) % camaras.length;
-    setCamIdx(nextIdx);
-    localStorage.setItem(CLAVE_CAMARA, camaras[nextIdx].id);
-    try {
-      if (scannerInstanceRef.current.isScanning) {
-        await scannerInstanceRef.current.stop();
-      }
-      await startWithCameraIndex(scannerInstanceRef.current, camaras, nextIdx);
-    } catch {
-      onNotify('error', 'No se pudo cambiar de cámara.');
     }
   };
 
@@ -384,38 +348,24 @@ export function ScannerSection({
             <div className="lg:col-span-5">
               <div className="rounded-xl bg-slate-950 border border-slate-700 p-3 text-center space-y-2.5">
                 <div id="qr-reader-container" className="w-full overflow-hidden rounded-lg" />
-                {(zoomCap || camaras.length > 1) && (
+                {zoomCap && (
                   <div className="flex items-center gap-2 text-xs text-slate-200 pt-1">
-                    {zoomCap && (
-                      <div className="flex items-center gap-2 flex-1">
-                        <ZoomIn className="w-4 h-4 text-teal-400 shrink-0" />
-                        <input
-                          type="range"
-                          min={zoomCap.min}
-                          max={zoomCap.max}
-                          step={zoomCap.step}
-                          value={zoomVal}
-                          onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
-                          className="flex-1 accent-teal-500"
-                          aria-label="Zoom de la cámara"
-                        />
-                        <span className="font-mono w-10 text-right tabular-nums">
-                          {zoomVal.toFixed(1)}x
-                        </span>
-                      </div>
-                    )}
-                    {camaras.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={handleSwitchCamera}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-600 hover:bg-slate-800 text-xs font-medium whitespace-nowrap"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>
-                          Cámara {camIdx + 1}/{camaras.length}
-                        </span>
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 flex-1">
+                      <ZoomIn className="w-4 h-4 text-teal-400 shrink-0" />
+                      <input
+                        type="range"
+                        min={zoomCap.min}
+                        max={zoomCap.max}
+                        step={zoomCap.step}
+                        value={zoomVal}
+                        onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
+                        className="flex-1 accent-teal-500"
+                        aria-label="Zoom de la cámara"
+                      />
+                      <span className="font-mono w-10 text-right tabular-nums">
+                        {zoomVal.toFixed(1)}x
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>

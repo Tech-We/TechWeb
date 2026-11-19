@@ -15,17 +15,13 @@ import {
   Camera,
   CameraOff,
   ZoomIn,
-  RefreshCw,
 } from 'lucide-react';
 import type {Html5Qrcode} from 'html5-qrcode';
 import {
-  CLAVE_CAMARA,
   CLAVE_ZOOM,
   crearLectorCamara,
-  iniciarLectorConOpciones,
-  obtenerCamarasTraseras,
+  iniciarMejorCamara,
   sonidoEscaneo,
-  type CameraDevice,
   type ZoomCapabilities,
 } from '../utils/camera';
 import type {
@@ -643,8 +639,6 @@ export function ScannerCheckoutModal({
   // Inline camera scanner state
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [camaras, setCamaras] = useState<CameraDevice[]>([]);
-  const [camIdx, setCamIdx] = useState(0);
   const [zoomCap, setZoomCap] = useState<ZoomCapabilities | null>(null);
   const [zoomVal, setZoomVal] = useState(1);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
@@ -697,30 +691,6 @@ export function ScannerCheckoutModal({
     };
   }, []);
 
-  const startModalCamWithIndex = async (
-    lector: Html5Qrcode,
-    lista: CameraDevice[],
-    index: number,
-  ) => {
-    const deviceId = lista.length ? lista[index].id : null;
-    const zoom = await iniciarLectorConOpciones(lector, deviceId, (decodedText) => {
-      const now = Date.now();
-      if (
-        decodedText === lastCamScanRef.current.code &&
-        now - lastCamScanRef.current.time < 2000
-      ) {
-        return;
-      }
-      lastCamScanRef.current = {code: decodedText, time: now};
-      const added = onAddByCodeRef.current(decodedText);
-      const ok = added !== false;
-      sonidoEscaneo(ok);
-      setLastScannedCode(ok ? `Agregado: ${decodedText}` : `No disponible: ${decodedText}`);
-    });
-    setZoomCap(zoom);
-    if (zoom) setZoomVal(zoom.valor);
-  };
-
   const toggleModalCamera = async () => {
     if (cameraActive) {
       await stopModalCamera();
@@ -732,35 +702,29 @@ export function ScannerCheckoutModal({
     setCameraActive(true);
 
     try {
-      const lista = await obtenerCamarasTraseras().catch(() => []);
-      setCamaras(lista);
-      let idx = lista.findIndex((c) => c.id === localStorage.getItem(CLAVE_CAMARA));
-      if (idx < 0) idx = 0;
-      setCamIdx(idx);
-
       const qr = await crearLectorCamara('checkout-qr-reader');
       checkoutCamRef.current = qr;
-      await startModalCamWithIndex(qr, lista, idx);
+      const zoom = await iniciarMejorCamara(qr, (decodedText) => {
+        const now = Date.now();
+        if (
+          decodedText === lastCamScanRef.current.code &&
+          now - lastCamScanRef.current.time < 2000
+        ) {
+          return;
+        }
+        lastCamScanRef.current = {code: decodedText, time: now};
+        const added = onAddByCodeRef.current(decodedText);
+        const ok = added !== false;
+        sonidoEscaneo(ok);
+        setLastScannedCode(ok ? `Agregado: ${decodedText}` : `No disponible: ${decodedText}`);
+      });
+      setZoomCap(zoom);
+      if (zoom) setZoomVal(zoom.valor);
     } catch {
       await stopModalCamera();
       setCameraError(
         'No se pudo acceder a la cámara. Verificá los permisos o ingresá el código manualmente.',
       );
-    }
-  };
-
-  const handleSwitchModalCamera = async () => {
-    if (!checkoutCamRef.current || camaras.length <= 1) return;
-    const nextIdx = (camIdx + 1) % camaras.length;
-    setCamIdx(nextIdx);
-    localStorage.setItem(CLAVE_CAMARA, camaras[nextIdx].id);
-    try {
-      if (checkoutCamRef.current.isScanning) {
-        await checkoutCamRef.current.stop();
-      }
-      await startModalCamWithIndex(checkoutCamRef.current, camaras, nextIdx);
-    } catch {
-      setCameraError('No se pudo cambiar de cámara.');
     }
   };
 
@@ -901,38 +865,24 @@ export function ScannerCheckoutModal({
                   id="checkout-qr-reader"
                   className="w-full max-w-sm mx-auto overflow-hidden rounded-lg"
                 />
-                {(zoomCap || camaras.length > 1) && (
+                {zoomCap && (
                   <div className="flex items-center gap-2 max-w-sm mx-auto text-xs">
-                    {zoomCap && (
-                      <div className="flex items-center gap-2 flex-1">
-                        <ZoomIn className="w-4 h-4 text-teal-400 shrink-0" />
-                        <input
-                          type="range"
-                          min={zoomCap.min}
-                          max={zoomCap.max}
-                          step={zoomCap.step}
-                          value={zoomVal}
-                          onChange={(e) => handleModalZoomChange(parseFloat(e.target.value))}
-                          className="flex-1 accent-teal-500"
-                          aria-label="Zoom de la cámara"
-                        />
-                        <span className="font-mono w-10 text-right tabular-nums">
-                          {zoomVal.toFixed(1)}x
-                        </span>
-                      </div>
-                    )}
-                    {camaras.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={handleSwitchModalCamera}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-600 hover:bg-slate-800 text-xs whitespace-nowrap"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>
-                          {camIdx + 1}/{camaras.length}
-                        </span>
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 flex-1">
+                      <ZoomIn className="w-4 h-4 text-teal-400 shrink-0" />
+                      <input
+                        type="range"
+                        min={zoomCap.min}
+                        max={zoomCap.max}
+                        step={zoomCap.step}
+                        value={zoomVal}
+                        onChange={(e) => handleModalZoomChange(parseFloat(e.target.value))}
+                        className="flex-1 accent-teal-500"
+                        aria-label="Zoom de la cámara"
+                      />
+                      <span className="font-mono w-10 text-right tabular-nums">
+                        {zoomVal.toFixed(1)}x
+                      </span>
+                    </div>
                   </div>
                 )}
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-300 pt-1">
